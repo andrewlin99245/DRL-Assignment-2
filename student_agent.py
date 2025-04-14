@@ -500,7 +500,7 @@ class TemporalMCTS:
         # Afterstate‐node logic
             if current.kind == 1:
                 free_cells = list(zip(*np.where(current.board == 0)))
-                if not free_cells or current.is_expanded(free_cells):
+                if not free_cells or not current.is_expanded(free_cells):
                     # would have returned (current, trajectory) here
                     break
                 # if there *are* free cells and not fully expanded,
