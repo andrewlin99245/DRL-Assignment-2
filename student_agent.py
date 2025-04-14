@@ -602,7 +602,7 @@ def get_action(state,score):
         selected_move = [m for m in range(4)]
     else:
         for _ in range(mcts.iterations):
-            leaf, path_trace = mcts.traverse(root_state, temp_env, legal_moves)
+            leaf, path_trace = mcts.traverse(root_state, legal_moves)
             if leaf.visits > 0:
                 leaf = mcts.expand(leaf, temp_env, path_trace[-1][0] if path_trace else None)
             sim_result = mcts.simulate(leaf)
