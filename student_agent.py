@@ -555,7 +555,7 @@ patterns = [
     ]
 ntuple_sys = NTupleSystem(board_dimension=4, pattern_list=patterns)
 ntuple_sys.load_parameters("my_best_weight.bin")
-mcts = TemporalMCTS(ntuple_sys, iterations=100, exploration_factor=1.0, scaling=4608)
+mcts = TemporalMCTS(ntuple_sys, iterations=100, exploration_factor=1.0, scaling=4096)
 def init_model():
     global approximator
     if approximator is None:
