@@ -475,14 +475,14 @@ class TemporalMCTS:
         self.exploration_factor = exploration_factor
         self.scale = scaling
 
-    def traverse(self, root, env, available_moves=None):
+    def traverse(self, root, available_moves=None):
         trajectory = []
         current = root
         moves = available_moves
 
         while True:
             # State‐node logic
-            if current.kind == 0:
+            if current.kind == 0:# before the random tile is added
                 if moves is None:
                     tmp_env = self.initialize_env(current.board)
                     moves = [a for a in range(4) if tmp_env.is_move_legal(a)]
@@ -504,10 +504,11 @@ class TemporalMCTS:
                     # would have returned (current, trajectory) here
                     break
                 # if there *are* free cells and not fully expanded,
-                # original code also returned here, so:
-                break
-
-            # Fallback (shouldn't really happen)
+                i, j = random.choice(free_cells)            # pick a random empty cell
+                tile = 2 if random.random() < 0.9 else 4     # 90% for 2, 10% for 4
+                # descend into that child
+                current = current.children[(i, j, tile)]
+                continue
             break
 
         return current, trajectory
@@ -521,6 +522,18 @@ class TemporalMCTS:
                     new_after_node = AfterMoveNode(new_board, node, reward)
                     node.children[move] = new_after_node
                     return new_after_node
+        if node.kind == 1:
+            free_cells = list(zip(*np.where(node.board == 0)))
+            for (i, j) in free_cells:
+                for tile in (2, 4):
+                    key = (i, j, tile)
+                    if key not in node.children:
+                        # spawn the tile and create the next StateNode
+                        next_board = node.board.copy()
+                        next_board[i, j] = tile
+                        child = StateNode(next_board, node)
+                        node.children[key] = child
+                        return child
         return node
 
     def simulate(self, node):
@@ -532,6 +545,7 @@ class TemporalMCTS:
         if not legal_moves:
             return 0
         best_val = -float('inf')
+        # node of type 0
         for move in legal_moves:
             new_board, reward = perform_move(snapshot, move)
             val = self.ntuple_system.estimate_board(flatten_grid(new_board))
