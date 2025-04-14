@@ -29,7 +29,6 @@ class Game2048Env(gym.Env):
         self.board = np.zeros((self.size, self.size), dtype=int)
         self.score = 0
 
-        # Action space: 0: up, 1: down, 2: left, 3: right
         self.action_space = spaces.Discrete(4)
         self.actions = ["up", "down", "left", "right"]
 
@@ -188,21 +187,21 @@ class Game2048Env(gym.Env):
     def is_move_legal(self, action):
         temp_board = self.board.copy()
 
-        if action == 0:  # Move up
+        if action == 0:  
             for j in range(self.size):
                 col = temp_board[:, j]
                 new_col = self.simulate_row_move(col)
                 temp_board[:, j] = new_col
-        elif action == 1:  # Move down
+        elif action == 1:  
             for j in range(self.size):
                 col = temp_board[:, j][::-1]
                 new_col = self.simulate_row_move(col)
                 temp_board[:, j] = new_col[::-1]
-        elif action == 2:  # Move left
+        elif action == 2:  
             for i in range(self.size):
                 row = temp_board[i]
                 temp_board[i] = self.simulate_row_move(row)
-        elif action == 3:  # Move right
+        elif action == 3:  
             for i in range(self.size):
                 row = temp_board[i][::-1]
                 new_row = self.simulate_row_move(row)
@@ -211,7 +210,6 @@ class Game2048Env(gym.Env):
             raise ValueError("Invalid action")
         return not np.array_equal(self.board, temp_board)
 
-# --- Grid Transformation Utilities ---
 
 def flip_horizontally(flat_list):
     # Reshape flat_list into a 4×4 matrix, reverse each row, and flatten the result.
@@ -232,7 +230,6 @@ def perform_rotation(flat_list, times):
         result = rotate_clockwise(result)
     return result
 
-# --- Feature Extraction Module ---
 
 class SymmetryFeature:
     def __init__(self, positions, num_symmetries=8):
@@ -279,11 +276,9 @@ class SymmetryFeature:
         return f"{len(self.positions)}-tuple {hex_label}"
 
     def load_from_stream(self, stream, count_format='I'):
-        # Read and discard the stored name length and name.
         name_len_data = stream.read(4)
         name_len = struct.unpack('i', name_len_data)[0]
         stream.read(name_len)
-        # Read the number of parameters.
         format_size = struct.calcsize(count_format)
         param_count_data = stream.read(format_size)
         param_count = struct.unpack(count_format, param_count_data)[0]
@@ -291,7 +286,6 @@ class SymmetryFeature:
         param_data = stream.read(param_count * float_size)
         self.parameters = list(struct.unpack(f'{param_count}f', param_data))
 
-# --- NTuple System for Approximating Values ---
 
 class NTupleSystem:
     def __init__(self, board_dimension, pattern_list, num_symmetries=8):
@@ -312,7 +306,6 @@ class NTupleSystem:
             for feature in self.features:
                 feature.load_from_stream(f, count_format)
 
-# --- Board Processing Helpers ---
 
 def tile_to_exponent(tile):
     return 0 if tile == 0 else int(math.log(tile, 2))
@@ -425,14 +418,13 @@ def choose_best(board, system):
             optimal_direction = direction
     return optimal_direction, optimal_value
 
-# --- MCTS Tree Structures ---
 
 class StateNode:
     def __init__(self, board, parent=None):
-        self.kind = 0  # 0 for a regular state node
+        self.kind = 0  
         self.board = board.copy()
         self.parent = parent
-        self.children = {}  # mapping: action -> AfterMoveNode
+        self.children = {}  
         self.visits = 0
         self.total = 0.0
 
@@ -466,7 +458,6 @@ class AfterMoveNode:
         # Two possibilities (tile 2 or 4) per free slot.
         return len(self.children) == len(free_slots) * 2
 
-# --- Temporal-Difference MCTS Algorithm ---
 
 class TemporalMCTS:
     def __init__(self, ntuple_system, iterations=1000, exploration_factor=1.0, scaling=4096):
@@ -488,7 +479,6 @@ class TemporalMCTS:
                     moves = [a for a in range(4) if tmp_env.is_move_legal(a)]
 
                 if not current.is_expanded(moves):
-                    # would have returned (current, trajectory) here
                     break
 
                 action = current.select_action(moves, self.exploration_factor)
@@ -496,18 +486,12 @@ class TemporalMCTS:
                 current = current.children[action]
                 moves = None
                 continue
-
-        # Afterstate‐node logic
             if current.kind == 1:
                 free_cells = list(zip(*np.where(current.board == 0)))
                 if not free_cells or current.is_expanded(free_cells):
-                    # would have returned (current, trajectory) here
                     break
-                # if there *are* free cells and not fully expanded,
-                # original code also returned here, so:
                 break
 
-            # Fallback (shouldn't really happen)
             break
 
         return current, trajectory
@@ -558,7 +542,6 @@ class TemporalMCTS:
         return best_move
 
     def initialize_env(self, board):
-        # Assuming Game2048Env implements gym.Env
         environment = Game2048Env()
         environment.board = board.copy()
         return environment
@@ -580,7 +563,6 @@ def init_model():
         approximator = NTupleSystem(board_dimension=4, pattern_list=patterns)
         approximator.load_parameters("my_best_weight.bin") 
 def get_action(state,score):
-    # Assume Game2048Env is defined (as a gym.Env)
     root_state = StateNode(state)
     temp_env = mcts.initialize_env(state)
     legal_moves = [m for m in range(4) if temp_env.is_move_legal(m)]
